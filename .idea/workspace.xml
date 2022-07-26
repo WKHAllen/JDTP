@@ -5,7 +5,14 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="dd9d02f0-c34c-4978-b3c3-77170bbd66f8" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/src/main/java/jdtp/JDTPException.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/jdtp/Util.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/test/java/jdtp/TestClient.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/test/java/jdtp/TestServer.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/jdtp/Client.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/jdtp/Client.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/jdtp/Server.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/jdtp/Server.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/test/java/jdtp/JDTPTest.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/test/java/jdtp/JDTPTest.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />

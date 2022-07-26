@@ -4,8 +4,8 @@ import org.junit.jupiter.api.Test;
 
 public class JDTPTest {
     @Test void doNothing() {
-        Server server = new Server();
-        Client client = new Client();
+        TestServer server = new TestServer();
+        TestClient client = new TestClient();
         System.out.println("Testing");
     }
 }

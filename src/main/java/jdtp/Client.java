@@ -1,4 +1,4 @@
 package jdtp;
 
-public class Client {
+public abstract class Client {
 }
