@@ -1,10 +1,10 @@
 package jdtp;
 
-import java.net.Socket;
-import java.net.ServerSocket;
-import java.net.InetSocketAddress;
-import java.net.UnknownHostException;
 import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.net.UnknownHostException;
 import java.util.HashMap;
 
 public abstract class Server {
@@ -39,19 +39,33 @@ public abstract class Server {
         callServe();
     }
 
-    public void start(String host) {}
+    public void start(String host) {
+        // TODO
+    }
 
-    public void start(int port) {}
+    public void start(int port) {
+        // TODO
+    }
 
-    public void start() {}
+    public void start() {
+        // TODO
+    }
 
-    public void stop() {}
+    public void stop() {
+        // TODO
+    }
 
-    public void send() {}
+    public void send(long clientID, byte[] data) {
+        // TODO
+    }
 
-    public void sendAll() {}
+    public void sendAll(byte[] data) {
+        // TODO
+    }
 
-    public void removeClient(long clientID) {}
+    public void removeClient(long clientID) {
+        // TODO
+    }
 
     public boolean isServing() {
         return serving;
@@ -105,15 +119,25 @@ public abstract class Server {
         return nextClientID++;
     }
 
-    private void callServe() {}
+    private void callServe() {
+        // TODO
+    }
 
-    private void serve() {}
+    private void serve() {
+        // TODO
+    }
 
-    private void callReceive(long clientID, byte[] data) {}
+    private void callReceive(long clientID, byte[] data) {
+        // TODO
+    }
 
-    private void callConnect(long clientID) {}
+    private void callConnect(long clientID) {
+        // TODO
+    }
 
-    private void callDisconnect(long clientID) {}
+    private void callDisconnect(long clientID) {
+        // TODO
+    }
 
     protected abstract void receive(long clientID, byte[] data);
 
