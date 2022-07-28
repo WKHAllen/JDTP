@@ -1,6 +1,6 @@
 package jdtp;
 
-public class TestClient extends Client {
+class TestClient extends Client {
     @Override
     protected void receive(byte[] data) {
         // TODO

@@ -6,8 +6,6 @@
   <component name="ChangeListManager">
     <list default="true" id="dd9d02f0-c34c-4978-b3c3-77170bbd66f8" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/jdtp/Client.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/jdtp/Client.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/jdtp/Server.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/jdtp/Server.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/jdtp/Util.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/jdtp/Util.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/test/java/jdtp/JDTPTest.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/test/java/jdtp/JDTPTest.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/test/java/jdtp/TestClient.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/test/java/jdtp/TestClient.java" afterDir="false" />
@@ -76,12 +74,12 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "SHARE_PROJECT_CONFIGURATION_FILES": "true",
-    "settings.editor.selected.configurable": "actions.on.save"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;actions.on.save&quot;
   }
-}]]></component>
+}</component>
   <component name="RunManager">
     <configuration name="JDTPTest" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
       <ExternalSystemSettings>

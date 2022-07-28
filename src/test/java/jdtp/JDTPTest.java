@@ -2,7 +2,7 @@ package jdtp;
 
 import org.junit.jupiter.api.Test;
 
-public class JDTPTest {
+class JDTPTest {
     @Test
     void doNothing() {
         // TODO
