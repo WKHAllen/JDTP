@@ -195,6 +195,8 @@ public abstract class Server {
     }
 
     private void serve() throws IOException {
+        ByteBuffer sizeBuffer = ByteBuffer.allocate(Util.lenSize);
+
         while (serving) {
             selector.select();
             Set<SelectionKey> selectedKeys = selector.selectedKeys();
@@ -215,7 +217,7 @@ public abstract class Server {
                 } else if (key.isReadable()) {
                     SocketChannel client = (SocketChannel) key.channel();
                     long clientID = clients.entrySet().stream().filter(entry -> Objects.equals(entry.getValue(), client)).map(Map.Entry::getKey).toList().get(0);
-                    ByteBuffer sizeBuffer = ByteBuffer.allocate(Util.lenSize);
+                    sizeBuffer.clear();
 
                     int bytesReceived = client.read(sizeBuffer);
 
