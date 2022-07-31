@@ -8,6 +8,7 @@ import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public abstract class Server {
     private final boolean blocking;
@@ -216,7 +217,13 @@ public abstract class Server {
                     callConnect(clientID);
                 } else if (key.isReadable()) {
                     SocketChannel client = (SocketChannel) key.channel();
-                    long clientID = clients.entrySet().stream().filter(entry -> Objects.equals(entry.getValue(), client)).map(Map.Entry::getKey).toList().get(0);
+                    long clientID = clients
+                            .entrySet()
+                            .stream()
+                            .filter(entry -> Objects.equals(entry.getValue(), client))
+                            .map(Map.Entry::getKey)
+                            .collect(Collectors.toList())
+                            .get(0);
                     sizeBuffer.clear();
 
                     int bytesReceived = client.read(sizeBuffer);
