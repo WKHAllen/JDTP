@@ -10,25 +10,76 @@ import java.nio.channels.SocketChannel;
 import java.util.*;
 import java.util.stream.Collectors;
 
+/**
+ * A socket server.
+ */
 public abstract class Server {
+    /**
+     * Whether the server will block while serving clients.
+     */
     private final boolean blocking;
+
+    /**
+     * Whether the server will block while calling event methods.
+     */
     private final boolean eventBlocking;
+
+    /**
+     * Whether the server is currently serving.
+     */
     private boolean serving = false;
+
+    /**
+     * The server socket selector.
+     */
     private Selector selector = null;
+
+    /**
+     * The server socket.
+     */
     private ServerSocketChannel sock = null;
+
+    /**
+     * The thread from which the server will serve clients.
+     */
     private Thread serveThread = null;
+
+    /**
+     * A collection of the client sockets.
+     */
     private final HashMap<Long, SocketChannel> clients = new HashMap<Long, SocketChannel>();
+
+    /**
+     * The next available client ID.
+     */
     private long nextClientID = 0;
 
+    /**
+     * Instantiate a socket server.
+     *
+     * @param blocking_      Whether the server should block while serving clients.
+     * @param eventBlocking_ Whether the server should block while calling event methods.
+     */
     public Server(boolean blocking_, boolean eventBlocking_) {
         blocking = blocking_;
         eventBlocking = eventBlocking_;
     }
 
+    /**
+     * Instantiate a socket server which doesn't block while serving or calling event methods.
+     */
     public Server() {
         this(false, false);
     }
 
+    /**
+     * Start the socket server.
+     *
+     * @param host The address to host the server on.
+     * @param port The port to host the server on.
+     * @throws JDTPException If the server is already serving.
+     * @throws IOException   If an error occurs while starting the server.
+     */
     public void start(String host, int port) throws JDTPException, IOException {
         if (serving) {
             throw new JDTPException("server is already serving");
@@ -47,18 +98,45 @@ public abstract class Server {
         callServe();
     }
 
+    /**
+     * Start the socket server, using the default port.
+     *
+     * @param host The address to host the server on.
+     * @throws JDTPException If the server is already serving.
+     * @throws IOException   If an error occurs while starting the server.
+     */
     public void start(String host) throws JDTPException, IOException {
         start(host, Util.defaultPort);
     }
 
+    /**
+     * Start the socket server, using the default host.
+     *
+     * @param port The port to host the server on.
+     * @throws JDTPException If the server is already serving.
+     * @throws IOException   If an error occurs while starting the server.
+     */
     public void start(int port) throws JDTPException, IOException {
         start(Util.defaultHost(), port);
     }
 
+    /**
+     * Start the socket server, using the default host and port.
+     *
+     * @throws JDTPException If the server is already serving.
+     * @throws IOException   If an error occurs while starting the server.
+     */
     public void start() throws JDTPException, IOException {
         start(Util.defaultHost(), Util.defaultPort);
     }
 
+    /**
+     * Stop the server.
+     *
+     * @throws JDTPException        If the server is not serving.
+     * @throws IOException          If an error occurs while stopping the server.
+     * @throws InterruptedException If an error occurs while waiting for the serve thread to join.
+     */
     public void stop() throws JDTPException, IOException, InterruptedException {
         if (!serving) {
             throw new JDTPException("server is not serving");
@@ -79,6 +157,14 @@ public abstract class Server {
         selector.close();
     }
 
+    /**
+     * Send data to a client.
+     *
+     * @param clientID The ID of the client to send the data to.
+     * @param data     The data to send.
+     * @throws JDTPException If the server is not serving, or if the specified client does not exist.
+     * @throws IOException   If an error occurs while sending the data.
+     */
     public void send(long clientID, byte[] data) throws JDTPException, IOException {
         if (!serving) {
             throw new JDTPException("server is not serving");
@@ -95,6 +181,13 @@ public abstract class Server {
         }
     }
 
+    /**
+     * Send data to all clients.
+     *
+     * @param data The data to send.
+     * @throws JDTPException If the server is not serving.
+     * @throws IOException   If an error occurs while sending the data.
+     */
     public void sendAll(byte[] data) throws JDTPException, IOException {
         if (!serving) {
             throw new JDTPException("server is not serving");
@@ -109,6 +202,13 @@ public abstract class Server {
         }
     }
 
+    /**
+     * Disconnect a client from the server.
+     *
+     * @param clientID The ID of the client to disconnect.
+     * @throws JDTPException If the server is not serving, or if the specified client does not exist.
+     * @throws IOException   If an error occurs while disconnecting the client.
+     */
     public void removeClient(long clientID) throws JDTPException, IOException {
         if (!serving) {
             throw new JDTPException("server is not serving");
@@ -124,10 +224,22 @@ public abstract class Server {
         }
     }
 
+    /**
+     * Check if the server is serving.
+     *
+     * @return Whether the server is serving.
+     */
     public boolean isServing() {
         return serving;
     }
 
+    /**
+     * Get the host address of the server.
+     *
+     * @return The host address of the server.
+     * @throws JDTPException If the server is not serving.
+     * @throws IOException   If an error occurs while checking the host address of the server.
+     */
     public String getHost() throws JDTPException, IOException {
         if (!serving) {
             throw new JDTPException("server is not serving");
@@ -137,6 +249,13 @@ public abstract class Server {
         return address.getAddress().getHostAddress();
     }
 
+    /**
+     * Get the port of the server.
+     *
+     * @return The port of the server.
+     * @throws JDTPException If the server is not serving.
+     * @throws IOException   If an error occurs while checking the port of the server.
+     */
     public int getPort() throws JDTPException, IOException {
         if (!serving) {
             throw new JDTPException("server is not serving");
@@ -146,6 +265,14 @@ public abstract class Server {
         return address.getPort();
     }
 
+    /**
+     * Get the host address of a client.
+     *
+     * @param clientID The ID of the client.
+     * @return The host address of the client.
+     * @throws JDTPException If the server is not serving, or if the specified client does not exist.
+     * @throws IOException   If an error occurs while checking the host address of the client.
+     */
     public String getClientHost(long clientID) throws JDTPException, IOException {
         if (!serving) {
             throw new JDTPException("server is not serving");
@@ -161,6 +288,14 @@ public abstract class Server {
         }
     }
 
+    /**
+     * Get the port of a client.
+     *
+     * @param clientID The ID of the client.
+     * @return The port of the client.
+     * @throws JDTPException If the server is not serving, or if the specified client does not exist.
+     * @throws IOException   If an error occurs while checking the port of the client.
+     */
     public int getClientPort(long clientID) throws JDTPException, IOException {
         if (!serving) {
             throw new JDTPException("server is not serving");
@@ -176,10 +311,20 @@ public abstract class Server {
         }
     }
 
+    /**
+     * Get the next available client ID.
+     *
+     * @return The next available client ID.
+     */
     private long newClientID() {
         return nextClientID++;
     }
 
+    /**
+     * Call the serve method.
+     *
+     * @throws IOException If an error occurs while serving.
+     */
     private void callServe() throws IOException {
         if (blocking) {
             serve();
@@ -195,6 +340,11 @@ public abstract class Server {
         }
     }
 
+    /**
+     * Serve clients.
+     *
+     * @throws IOException If an error occurs while serving.
+     */
     private void serve() throws IOException {
         ByteBuffer sizeBuffer = ByteBuffer.allocate(Util.lenSize);
 
@@ -261,6 +411,12 @@ public abstract class Server {
         }
     }
 
+    /**
+     * Call the receive event method.
+     *
+     * @param clientID The ID of the client who sent the data.
+     * @param data     The data received from the client.
+     */
     private void callReceive(long clientID, byte[] data) {
         if (eventBlocking) {
             receive(clientID, data);
@@ -269,6 +425,11 @@ public abstract class Server {
         }
     }
 
+    /**
+     * Call the connect event method.
+     *
+     * @param clientID The ID of the client who connected.
+     */
     private void callConnect(long clientID) {
         if (eventBlocking) {
             connect(clientID);
@@ -277,6 +438,11 @@ public abstract class Server {
         }
     }
 
+    /**
+     * Call the disconnect event method.
+     *
+     * @param clientID The ID of the client who disconnected.
+     */
     private void callDisconnect(long clientID) {
         if (eventBlocking) {
             disconnect(clientID);
@@ -285,9 +451,25 @@ public abstract class Server {
         }
     }
 
+    /**
+     * An event method, called when data is received from a client.
+     *
+     * @param clientID The ID of the client who sent the data.
+     * @param data     The data received from the client.
+     */
     protected abstract void receive(long clientID, byte[] data);
 
+    /**
+     * An event method, called when a client connects.
+     *
+     * @param clientID The ID of the client who connected.
+     */
     protected abstract void connect(long clientID);
 
+    /**
+     * An event method, called when a client disconnects.
+     *
+     * @param clientID The ID of the client who disconnected.
+     */
     protected abstract void disconnect(long clientID);
 }

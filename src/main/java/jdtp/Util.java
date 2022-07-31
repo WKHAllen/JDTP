@@ -5,15 +5,41 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Arrays;
 
+/**
+ * JDTP utilities.
+ */
 class Util {
+    /**
+     * The length of the size portion of each message.
+     */
     public static final int lenSize = 5;
+
+    /**
+     * The default port.
+     */
     public static final int defaultPort = 29275;
+
+    /**
+     * The server listen backlog.
+     */
     public static final int listenBacklog = 8;
 
+    /**
+     * Get the default host.
+     *
+     * @return The default host.
+     * @throws UnknownHostException When the default host cannot be retrieved.
+     */
     public static String defaultHost() throws UnknownHostException {
         return InetAddress.getLocalHost().getHostName();
     }
 
+    /**
+     * Wrap a <code>byte[]</code> as a <code>Byte[]</code>.
+     *
+     * @param array The primitive byte array.
+     * @return The resulting byte array.
+     */
     private static Byte[] wrapByteArray(byte[] array) {
         if (array == null) {
             return null;
@@ -28,6 +54,12 @@ class Util {
         return result;
     }
 
+    /**
+     * Unwrap a <code>Byte[]</code> as a <code>byte[]</code>.
+     *
+     * @param array The byte array.
+     * @return The primitive byte array.
+     */
     private static byte[] unwrapByteArray(Byte[] array) {
         if (array == null) {
             return null;
@@ -42,6 +74,14 @@ class Util {
         return result;
     }
 
+    /**
+     * Concatenate two arrays.
+     *
+     * @param a   The first array.
+     * @param b   The second array.
+     * @param <T> The array type.
+     * @return The resulting concatenated array.
+     */
     private static <T> T[] arrayConcat(T[] a, T[] b) {
         int aLen = a.length;
         int bLen = b.length;
@@ -53,6 +93,12 @@ class Util {
         return c;
     }
 
+    /**
+     * Encode the size portion of a message to bytes.
+     *
+     * @param size The message size.
+     * @return The encoded message size.
+     */
     public static byte[] encodeMessageSize(long size) {
         byte[] encodedMessageSize = new byte[lenSize];
 
@@ -64,6 +110,12 @@ class Util {
         return encodedMessageSize;
     }
 
+    /**
+     * Decode the size portion of a message.
+     *
+     * @param encodedMessageSize The encoded message size.
+     * @return The actual message size.
+     */
     public static long decodeMessageSize(byte[] encodedMessageSize) {
         long size = 0;
 
@@ -75,12 +127,24 @@ class Util {
         return size;
     }
 
+    /**
+     * Encode a message.
+     *
+     * @param data The message data.
+     * @return The encoded message.
+     */
     public static byte[] encodeMessage(byte[] data) {
         byte[] encodedMessageSize = encodeMessageSize(data.length);
         byte[] encodedMessage = unwrapByteArray(arrayConcat(wrapByteArray(encodedMessageSize), wrapByteArray(data)));
         return encodedMessage;
     }
 
+    /**
+     * Decode a message.
+     *
+     * @param encodedMessage The encoded message.
+     * @return The decoded message data.
+     */
     public static byte[] decodeMessage(byte[] encodedMessage) {
         byte[] data = Arrays.copyOfRange(encodedMessage, lenSize, encodedMessage.length);
         return data;
