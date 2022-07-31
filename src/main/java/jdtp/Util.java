@@ -1,5 +1,6 @@
 package jdtp;
 
+import java.io.*;
 import java.lang.reflect.Array;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -91,6 +92,45 @@ class Util {
         System.arraycopy(b, 0, c, aLen, bLen);
 
         return c;
+    }
+
+    /**
+     * Serialize an object to bytes.
+     *
+     * @param obj The object to serialize.
+     * @return The resulting bytes.
+     * @throws IOException If an error occurs while serializing.
+     */
+    public static byte[] serialize(Object obj) throws IOException {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        ObjectOutputStream out = new ObjectOutputStream(bos);
+        out.writeObject(obj);
+        out.flush();
+
+        byte[] bytes = bos.toByteArray();
+
+        bos.close();
+
+        return bytes;
+    }
+
+    /**
+     * Deserialize an object from bytes.
+     *
+     * @param bytes The bytes to deserialize.
+     * @return The resulting object.
+     * @throws IOException            If an error occurs while deserializing.
+     * @throws ClassNotFoundException If the object cannot be constructed.
+     */
+    public static Object deserialize(byte[] bytes) throws IOException, ClassNotFoundException {
+        ByteArrayInputStream bis = new ByteArrayInputStream(bytes);
+        ObjectInput in = new ObjectInputStream(bis);
+
+        Object obj = in.readObject();
+
+        in.close();
+
+        return obj;
     }
 
     /**

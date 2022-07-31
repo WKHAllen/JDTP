@@ -134,12 +134,13 @@ public abstract class Client {
      * @throws JDTPException If the client is not connected to a server.
      * @throws IOException   If an error occurs while sending the data.
      */
-    public void send(byte[] data) throws JDTPException, IOException {
+    public void send(Object data) throws JDTPException, IOException {
         if (!connected) {
             throw new JDTPException("client is not connected to a server");
         }
 
-        byte[] encodedData = Util.encodeMessage(data);
+        byte[] serializedData = Util.serialize(data);
+        byte[] encodedData = Util.encodeMessage(serializedData);
         ByteBuffer encodedDataBuffer = ByteBuffer.wrap(encodedData);
         sock.write(encodedDataBuffer);
     }
@@ -280,10 +281,18 @@ public abstract class Client {
      * @param data The data received from the server.
      */
     private void callReceive(byte[] data) {
+        final Object deserializedData;
+
+        try {
+            deserializedData = Util.deserialize(data);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
         if (eventBlocking) {
-            receive(data);
+            receive(deserializedData);
         } else {
-            new Thread(() -> receive(data)).start();
+            new Thread(() -> receive(deserializedData)).start();
         }
     }
 
@@ -303,7 +312,7 @@ public abstract class Client {
      *
      * @param data The data received from the server.
      */
-    protected abstract void receive(byte[] data);
+    protected abstract void receive(Object data);
 
     /**
      * An event method, called when the server has disconnected the client.

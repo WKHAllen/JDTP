@@ -2,7 +2,7 @@ package jdtp;
 
 class TestServer extends Server {
     @Override
-    protected void receive(long clientID, byte[] data) {
+    protected void receive(long clientID, Object data) {
         // TODO
     }
 

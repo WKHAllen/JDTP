@@ -165,7 +165,7 @@ public abstract class Server {
      * @throws JDTPException If the server is not serving, or if the specified client does not exist.
      * @throws IOException   If an error occurs while sending the data.
      */
-    public void send(long clientID, byte[] data) throws JDTPException, IOException {
+    public void send(long clientID, Object data) throws JDTPException, IOException {
         if (!serving) {
             throw new JDTPException("server is not serving");
         }
@@ -173,7 +173,8 @@ public abstract class Server {
         SocketChannel clientSock = clients.get(clientID);
 
         if (clientSock != null) {
-            byte[] encodedData = Util.encodeMessage(data);
+            byte[] serializedData = Util.serialize(data);
+            byte[] encodedData = Util.encodeMessage(serializedData);
             ByteBuffer encodedDataBuffer = ByteBuffer.wrap(encodedData);
             clientSock.write(encodedDataBuffer);
         } else {
@@ -188,12 +189,13 @@ public abstract class Server {
      * @throws JDTPException If the server is not serving.
      * @throws IOException   If an error occurs while sending the data.
      */
-    public void sendAll(byte[] data) throws JDTPException, IOException {
+    public void sendAll(Object data) throws JDTPException, IOException {
         if (!serving) {
             throw new JDTPException("server is not serving");
         }
 
-        byte[] encodedData = Util.encodeMessage(data);
+        byte[] serializedData = Util.serialize(data);
+        byte[] encodedData = Util.encodeMessage(serializedData);
 
         for (Map.Entry<Long, SocketChannel> client : clients.entrySet()) {
             SocketChannel clientSock = client.getValue();
@@ -418,10 +420,18 @@ public abstract class Server {
      * @param data     The data received from the client.
      */
     private void callReceive(long clientID, byte[] data) {
+        final Object deserializedData;
+
+        try {
+            deserializedData = Util.deserialize(data);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
         if (eventBlocking) {
-            receive(clientID, data);
+            receive(clientID, deserializedData);
         } else {
-            new Thread(() -> receive(clientID, data)).start();
+            new Thread(() -> receive(clientID, deserializedData)).start();
         }
     }
 
@@ -457,7 +467,7 @@ public abstract class Server {
      * @param clientID The ID of the client who sent the data.
      * @param data     The data received from the client.
      */
-    protected abstract void receive(long clientID, byte[] data);
+    protected abstract void receive(long clientID, Object data);
 
     /**
      * An event method, called when a client connects.
