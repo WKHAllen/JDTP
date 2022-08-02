@@ -3,10 +3,7 @@ package jdtp;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
-import java.nio.channels.SelectionKey;
-import java.nio.channels.Selector;
-import java.nio.channels.ServerSocketChannel;
-import java.nio.channels.SocketChannel;
+import java.nio.channels.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -145,16 +142,17 @@ public abstract class Server {
         serving = false;
 
         for (Map.Entry<Long, SocketChannel> client : clients.entrySet()) {
-            removeClient(client.getKey());
+            client.getValue().close();
+            clients.remove(client.getKey());
         }
 
         sock.close();
+        selector.close();
 
         if (serveThread != null && serveThread != Thread.currentThread()) {
             serveThread.join();
         }
 
-        selector.close();
     }
 
     /**
@@ -352,7 +350,14 @@ public abstract class Server {
 
         while (serving) {
             selector.select();
-            Set<SelectionKey> selectedKeys = selector.selectedKeys();
+            Set<SelectionKey> selectedKeys = null;
+
+            try {
+                selectedKeys = selector.selectedKeys();
+            } catch (ClosedSelectorException e) {
+                return;
+            }
+
             Iterator<SelectionKey> iter = selectedKeys.iterator();
 
             while (iter.hasNext()) {
@@ -378,7 +383,19 @@ public abstract class Server {
                             .get(0);
                     sizeBuffer.clear();
 
-                    int bytesReceived = client.read(sizeBuffer);
+                    int bytesReceived = -1;
+
+                    try {
+                        bytesReceived = client.read(sizeBuffer);
+                    } catch (IOException e) {
+                        if (clients.containsKey(clientID)) {
+                            client.close();
+                            clients.remove(clientID);
+
+                            callDisconnect(clientID);
+                            continue;
+                        }
+                    }
 
                     if (bytesReceived != Util.lenSize) {
                         if (clients.containsKey(clientID)) {
@@ -393,7 +410,17 @@ public abstract class Server {
                     long messageSize = Util.decodeMessageSize(sizeBuffer.array());
                     ByteBuffer messageBuffer = ByteBuffer.allocate((int) messageSize);
 
-                    bytesReceived = client.read(messageBuffer);
+                    try {
+                        bytesReceived = client.read(messageBuffer);
+                    } catch (IOException e) {
+                        if (clients.containsKey(clientID)) {
+                            client.close();
+                            clients.remove(clientID);
+
+                            callDisconnect(clientID);
+                            continue;
+                        }
+                    }
 
                     if (bytesReceived != messageSize) {
                         if (clients.containsKey(clientID)) {

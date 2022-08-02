@@ -249,7 +249,13 @@ public abstract class Client {
         while (connected) {
             sizeBuffer.clear();
 
-            int bytesReceived = sock.read(sizeBuffer);
+            int bytesReceived = -1;
+
+            try {
+                bytesReceived = sock.read(sizeBuffer);
+            } catch (IOException e) {
+                break;
+            }
 
             if (bytesReceived != Util.lenSize) {
                 break;
@@ -258,7 +264,11 @@ public abstract class Client {
             long messageSize = Util.decodeMessageSize(sizeBuffer.array());
             ByteBuffer messageBuffer = ByteBuffer.allocate((int) messageSize);
 
-            bytesReceived = sock.read(messageBuffer);
+            try {
+                bytesReceived = sock.read(messageBuffer);
+            } catch (IOException e) {
+                break;
+            }
 
             if (bytesReceived != messageSize) {
                 break;
