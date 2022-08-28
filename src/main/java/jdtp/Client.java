@@ -10,16 +10,6 @@ import java.nio.channels.SocketChannel;
  */
 public abstract class Client {
     /**
-     * Whether the client will block while connected to a server.
-     */
-    private final boolean blocking;
-
-    /**
-     * Whether the client will block while calling event methods.
-     */
-    private final boolean eventBlocking;
-
-    /**
      * Whether the client is currently connected to a server.
      */
     private boolean connected = false;
@@ -36,20 +26,8 @@ public abstract class Client {
 
     /**
      * Instantiate a socket client.
-     *
-     * @param blocking_      Whether the client should block while connected to a server.
-     * @param eventBlocking_ Whether the client should block while calling event methods.
-     */
-    public Client(boolean blocking_, boolean eventBlocking_) {
-        blocking = blocking_;
-        eventBlocking = eventBlocking_;
-    }
-
-    /**
-     * Instantiate a socket client which doesn't block while connected to a server or calling event methods.
      */
     public Client() {
-        this(false, false);
     }
 
     /**
@@ -220,22 +198,16 @@ public abstract class Client {
 
     /**
      * Call the handle method.
-     *
-     * @throws IOException If an error occurs while handling data received from the server.
      */
-    private void callHandle() throws IOException {
-        if (blocking) {
-            handle();
-        } else {
-            handleThread = new Thread(() -> {
-                try {
-                    handle();
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-            });
-            handleThread.start();
-        }
+    private void callHandle() {
+        handleThread = new Thread(() -> {
+            try {
+                handle();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        });
+        handleThread.start();
     }
 
     /**
@@ -249,7 +221,7 @@ public abstract class Client {
         while (connected) {
             sizeBuffer.clear();
 
-            int bytesReceived = -1;
+            int bytesReceived;
 
             try {
                 bytesReceived = sock.read(sizeBuffer);
@@ -299,22 +271,14 @@ public abstract class Client {
             throw new RuntimeException(e);
         }
 
-        if (eventBlocking) {
-            receive(deserializedData);
-        } else {
-            new Thread(() -> receive(deserializedData)).start();
-        }
+        new Thread(() -> receive(deserializedData)).start();
     }
 
     /**
      * Call the disconnected event method.
      */
     private void callDisconnected() {
-        if (eventBlocking) {
-            disconnected();
-        } else {
-            new Thread(() -> disconnected()).start();
-        }
+        new Thread(() -> disconnected()).start();
     }
 
     /**

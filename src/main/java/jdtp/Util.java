@@ -175,8 +175,7 @@ class Util {
      */
     public static byte[] encodeMessage(byte[] data) {
         byte[] encodedMessageSize = encodeMessageSize(data.length);
-        byte[] encodedMessage = unwrapByteArray(arrayConcat(wrapByteArray(encodedMessageSize), wrapByteArray(data)));
-        return encodedMessage;
+        return unwrapByteArray(arrayConcat(wrapByteArray(encodedMessageSize), wrapByteArray(data)));
     }
 
     /**
@@ -186,7 +185,6 @@ class Util {
      * @return The decoded message data.
      */
     public static byte[] decodeMessage(byte[] encodedMessage) {
-        byte[] data = Arrays.copyOfRange(encodedMessage, lenSize, encodedMessage.length);
-        return data;
+        return Arrays.copyOfRange(encodedMessage, lenSize, encodedMessage.length);
     }
 }

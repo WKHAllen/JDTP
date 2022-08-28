@@ -12,16 +12,6 @@ import java.util.stream.Collectors;
  */
 public abstract class Server {
     /**
-     * Whether the server will block while serving clients.
-     */
-    private final boolean blocking;
-
-    /**
-     * Whether the server will block while calling event methods.
-     */
-    private final boolean eventBlocking;
-
-    /**
      * Whether the server is currently serving.
      */
     private boolean serving = false;
@@ -44,7 +34,7 @@ public abstract class Server {
     /**
      * A collection of the client sockets.
      */
-    private final HashMap<Long, SocketChannel> clients = new HashMap<Long, SocketChannel>();
+    private final HashMap<Long, SocketChannel> clients = new HashMap<>();
 
     /**
      * The next available client ID.
@@ -53,20 +43,8 @@ public abstract class Server {
 
     /**
      * Instantiate a socket server.
-     *
-     * @param blocking_      Whether the server should block while serving clients.
-     * @param eventBlocking_ Whether the server should block while calling event methods.
-     */
-    public Server(boolean blocking_, boolean eventBlocking_) {
-        blocking = blocking_;
-        eventBlocking = eventBlocking_;
-    }
-
-    /**
-     * Instantiate a socket server which doesn't block while serving or calling event methods.
      */
     public Server() {
-        this(false, false);
     }
 
     /**
@@ -326,18 +304,14 @@ public abstract class Server {
      * @throws IOException If an error occurs while serving.
      */
     private void callServe() throws IOException {
-        if (blocking) {
-            serve();
-        } else {
-            serveThread = new Thread(() -> {
-                try {
-                    serve();
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-            });
-            serveThread.start();
-        }
+        serveThread = new Thread(() -> {
+            try {
+                serve();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        });
+        serveThread.start();
     }
 
     /**
@@ -350,7 +324,7 @@ public abstract class Server {
 
         while (serving) {
             selector.select();
-            Set<SelectionKey> selectedKeys = null;
+            Set<SelectionKey> selectedKeys;
 
             try {
                 selectedKeys = selector.selectedKeys();
@@ -455,11 +429,7 @@ public abstract class Server {
             throw new RuntimeException(e);
         }
 
-        if (eventBlocking) {
-            receive(clientID, deserializedData);
-        } else {
-            new Thread(() -> receive(clientID, deserializedData)).start();
-        }
+        new Thread(() -> receive(clientID, deserializedData)).start();
     }
 
     /**
@@ -468,11 +438,7 @@ public abstract class Server {
      * @param clientID The ID of the client who connected.
      */
     private void callConnect(long clientID) {
-        if (eventBlocking) {
-            connect(clientID);
-        } else {
-            new Thread(() -> connect(clientID)).start();
-        }
+        new Thread(() -> connect(clientID)).start();
     }
 
     /**
@@ -481,11 +447,7 @@ public abstract class Server {
      * @param clientID The ID of the client who disconnected.
      */
     private void callDisconnect(long clientID) {
-        if (eventBlocking) {
-            disconnect(clientID);
-        } else {
-            new Thread(() -> disconnect(clientID)).start();
-        }
+        new Thread(() -> disconnect(clientID)).start();
     }
 
     /**
