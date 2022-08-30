@@ -200,11 +200,12 @@ class JDTPTest {
         // Send messages
         for (Object serverMessage : serverMessages) {
             c.send(serverMessage);
+            Thread.sleep(10);
         }
         for (Object clientMessage : clientMessages) {
             s.send(0, clientMessage);
+            Thread.sleep(10);
         }
-        Thread.sleep(waitTime);
 
         // Disconnect client
         c.disconnect();
@@ -244,9 +245,9 @@ class JDTPTest {
         Thread.sleep(waitTime);
 
         // Send messages
-        byte[] largeServerMessage = new byte[random.nextInt(32768, 65536)];
+        byte[] largeServerMessage = new byte[random.nextInt(32768) + 32768];
         random.nextBytes(largeServerMessage);
-        byte[] largeClientMessage = new byte[random.nextInt(16384, 32768)];
+        byte[] largeClientMessage = new byte[random.nextInt(16384) + 16384];
         random.nextBytes(largeClientMessage);
         c.send(largeServerMessage);
         s.sendAll(largeClientMessage);
@@ -278,8 +279,8 @@ class JDTPTest {
     @Test
     void TestSendingNumerousMessages() throws JDTPException, IOException, InterruptedException {
         // Messages
-        int[] serverMessages = new int[random.nextInt(64, 128)];
-        int[] clientMessages = new int[random.nextInt(128, 256)];
+        int[] serverMessages = new int[random.nextInt(64) + 64];
+        int[] clientMessages = new int[random.nextInt(128) + 128];
         for (int i = 0; i < serverMessages.length; i++) {
             serverMessages[i] = random.nextInt();
         }
@@ -303,9 +304,11 @@ class JDTPTest {
         // Send messages
         for (int serverMessage : serverMessages) {
             c.send(serverMessage);
+            Thread.sleep(10);
         }
         for (int clientMessage : clientMessages) {
             s.sendAll(clientMessage);
+            Thread.sleep(10);
         }
         Thread.sleep(waitTime);
 
