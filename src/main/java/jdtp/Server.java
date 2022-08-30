@@ -300,10 +300,8 @@ public abstract class Server {
 
     /**
      * Call the serve method.
-     *
-     * @throws IOException If an error occurs while serving.
      */
-    private void callServe() throws IOException {
+    private void callServe() {
         serveThread = new Thread(() -> {
             try {
                 serve();

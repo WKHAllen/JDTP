@@ -161,7 +161,7 @@ class Util {
 
         for (int i = 0; i < lenSize; i++) {
             size <<= 8;
-            size += encodedMessageSize[i];
+            size += encodedMessageSize[i] & 0xff;
         }
 
         return size;

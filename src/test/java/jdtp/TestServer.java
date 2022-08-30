@@ -1,28 +1,81 @@
 package jdtp;
 
+import java.util.ArrayList;
+
 class TestServer extends Server {
-    public boolean receivingRandomMessage = false;
-    public long randomMessage;
+    private int receiveCount;
+    private int connectCount;
+    private int disconnectCount;
+    private final ArrayList<Object> received = new ArrayList<>();
+    private final ArrayList<Long> receivedClientIDs = new ArrayList<>();
+    private final ArrayList<Long> connectClientIDs = new ArrayList<>();
+    private final ArrayList<Long> disconnectClientIDs = new ArrayList<>();
+    public boolean replyWithStringLength = false;
+
+    TestServer(int receiveCount, int connectCount, int disconnectCount) {
+        super();
+
+        this.receiveCount = receiveCount;
+        this.connectCount = connectCount;
+        this.disconnectCount = disconnectCount;
+    }
+
+    public boolean eventsDone() {
+        return receiveCount == 0 && connectCount == 0 && disconnectCount == 0;
+    }
+
+    public int getReceiveCount() {
+        return receiveCount;
+    }
+
+    public int getConnectCount() {
+        return connectCount;
+    }
+
+    public int getDisconnectCount() {
+        return disconnectCount;
+    }
+
+    public Object[] getReceived() {
+        return received.toArray();
+    }
+
+    public long[] getReceivedClientIDs() {
+        return receivedClientIDs.stream().mapToLong(x -> x).toArray();
+    }
+
+    public long[] getConnectClientIDs() {
+        return connectClientIDs.stream().mapToLong(x -> x).toArray();
+    }
+
+    public long[] getDisconnectClientIDs() {
+        return disconnectClientIDs.stream().mapToLong(x -> x).toArray();
+    }
 
     @Override
     protected void receive(long clientID, Object data) {
-        if (!receivingRandomMessage) {
-            String message = (String) data;
-            System.out.printf("[SERVER] Received data from client #%d: %s (size %d)\n", clientID, message, message.length());
-        } else {
-            long dataLong = (long) data;
-            System.out.printf("[SERVER] Received large random message from client (size %d, %d)\n", dataLong, randomMessage);
-            assert dataLong == randomMessage;
+        receiveCount -= 1;
+        received.add(data);
+        receivedClientIDs.add(clientID);
+
+        if (replyWithStringLength) {
+            try {
+                send(clientID, ((String) data).length());
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 
     @Override
     protected void connect(long clientID) {
-        System.out.printf("[SERVER] Client #%d connected\n", clientID);
+        connectCount -= 1;
+        connectClientIDs.add(clientID);
     }
 
     @Override
     protected void disconnect(long clientID) {
-        System.out.printf("[SERVER] Client #%d disconnected\n", clientID);
+        disconnectCount -= 1;
+        disconnectClientIDs.add(clientID);
     }
 }
