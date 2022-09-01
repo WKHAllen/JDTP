@@ -2,7 +2,11 @@ package jdtp;
 
 import org.junit.jupiter.api.Test;
 
+import javax.crypto.BadPaddingException;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
 import java.io.IOException;
+import java.security.*;
 import java.util.Arrays;
 import java.util.Random;
 
@@ -51,8 +55,21 @@ class JDTPTest {
     }
 
     @Test
-    void TestCrypto() {
+    void TestCrypto() throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException,
+            IllegalBlockSizeException, BadPaddingException, InvalidAlgorithmParameterException {
+        // Test RSA
+        byte[] rsaMessage = "Hello, RSA!".getBytes();
+        KeyPair keyPair = Crypto.newRSAKeys();
+        byte[] rsaEncrypted = Crypto.rsaEncrypt(keyPair.getPublic(), rsaMessage);
+        byte[] rsaDecrypted = Crypto.rsaDecrypt(keyPair.getPrivate(), rsaEncrypted);
+        assert Arrays.equals(rsaDecrypted, rsaMessage);
 
+        // Test AES
+        byte[] aesMessage = "Hello, AES!".getBytes();
+        Key key = Crypto.newAESKey();
+        byte[] aesEncrypted = Crypto.aesEncrypt(key, aesMessage);
+        byte[] aesDecrypted = Crypto.aesDecrypt(key, aesEncrypted);
+        assert Arrays.equals(aesDecrypted, aesMessage);
     }
 
     @Test
