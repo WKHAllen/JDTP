@@ -4,6 +4,10 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.*;
+import java.security.Key;
+import java.security.KeyPair;
+import java.security.PrivateKey;
+import java.security.PublicKey;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -35,6 +39,11 @@ public abstract class Server {
      * A collection of the client sockets.
      */
     private final HashMap<Long, SocketChannel> clients = new HashMap<>();
+
+    /**
+     * A collection of the client crypto keys.
+     */
+    private final HashMap<Long, Key> keys = new HashMap<>();
 
     /**
      * The next available client ID.
@@ -122,6 +131,7 @@ public abstract class Server {
         for (Map.Entry<Long, SocketChannel> client : clients.entrySet()) {
             client.getValue().close();
             clients.remove(client.getKey());
+            keys.remove(client.getKey());
         }
 
         sock.close();
@@ -147,10 +157,19 @@ public abstract class Server {
         }
 
         SocketChannel clientSock = clients.get(clientID);
+        Key key = keys.get(clientID);
 
         if (clientSock != null) {
             byte[] serializedData = Util.serialize(data);
-            byte[] encodedData = Util.encodeMessage(serializedData);
+            byte[] encryptedData;
+
+            try {
+                encryptedData = Crypto.aesEncrypt(key, serializedData);
+            } catch (Exception e) {
+                throw new JDTPException("encryption error", e);
+            }
+
+            byte[] encodedData = Util.encodeMessage(encryptedData);
             ByteBuffer encodedDataBuffer = ByteBuffer.wrap(encodedData);
             clientSock.write(encodedDataBuffer);
         } else {
@@ -170,13 +189,8 @@ public abstract class Server {
             throw new JDTPException("server is not serving");
         }
 
-        byte[] serializedData = Util.serialize(data);
-        byte[] encodedData = Util.encodeMessage(serializedData);
-
         for (Map.Entry<Long, SocketChannel> client : clients.entrySet()) {
-            SocketChannel clientSock = client.getValue();
-            ByteBuffer encodedDataBuffer = ByteBuffer.wrap(encodedData);
-            clientSock.write(encodedDataBuffer);
+            send(client.getKey(), data);
         }
     }
 
@@ -197,6 +211,7 @@ public abstract class Server {
         if (client != null) {
             client.close();
             clients.remove(clientID);
+            keys.remove(clientID);
         } else {
             throw new JDTPException("client does not exist");
         }
@@ -305,7 +320,7 @@ public abstract class Server {
         serveThread = new Thread(() -> {
             try {
                 serve();
-            } catch (IOException e) {
+            } catch (Exception e) {
                 throw new RuntimeException(e);
             }
         });
@@ -317,7 +332,7 @@ public abstract class Server {
      *
      * @throws IOException If an error occurs while serving.
      */
-    private void serve() throws IOException {
+    private void serve() throws JDTPException, IOException, ClassNotFoundException {
         ByteBuffer sizeBuffer = ByteBuffer.allocate(Util.lenSize);
 
         while (serving) {
@@ -337,10 +352,13 @@ public abstract class Server {
 
                 if (key.isAcceptable()) {
                     SocketChannel client = sock.accept();
-                    client.configureBlocking(false);
-                    client.register(selector, SelectionKey.OP_READ);
 
                     long clientID = newClientID();
+
+                    exchangeKeys(clientID, client);
+
+                    client.configureBlocking(false);
+                    client.register(selector, SelectionKey.OP_READ);
                     clients.put(clientID, client);
 
                     callConnect(clientID);
@@ -363,6 +381,7 @@ public abstract class Server {
                         if (clients.containsKey(clientID)) {
                             client.close();
                             clients.remove(clientID);
+                            keys.remove(clientID);
 
                             callDisconnect(clientID);
                             continue;
@@ -373,6 +392,7 @@ public abstract class Server {
                         if (clients.containsKey(clientID)) {
                             client.close();
                             clients.remove(clientID);
+                            keys.remove(clientID);
 
                             callDisconnect(clientID);
                             continue;
@@ -388,6 +408,7 @@ public abstract class Server {
                         if (clients.containsKey(clientID)) {
                             client.close();
                             clients.remove(clientID);
+                            keys.remove(clientID);
 
                             callDisconnect(clientID);
                             continue;
@@ -398,6 +419,7 @@ public abstract class Server {
                         if (clients.containsKey(clientID)) {
                             client.close();
                             clients.remove(clientID);
+                            keys.remove(clientID);
 
                             callDisconnect(clientID);
                             continue;
@@ -413,16 +435,74 @@ public abstract class Server {
     }
 
     /**
+     * Exchange crypto keys with a client.
+     *
+     * @param clientID The ID of the new client.
+     * @param client   The client socket.
+     */
+    private void exchangeKeys(long clientID, SocketChannel client) throws JDTPException, IOException, ClassNotFoundException {
+        KeyPair keyPair;
+
+        try {
+            keyPair = Crypto.newRSAKeys();
+        } catch (Exception e) {
+            throw new JDTPException("key generation error", e);
+        }
+
+        PublicKey publicKey = keyPair.getPublic();
+        PrivateKey privateKey = keyPair.getPrivate();
+        byte[] publicKeySerialized = Util.serialize(publicKey);
+        byte[] publicKeyEncoded = Util.encodeMessage(publicKeySerialized);
+        client.write(ByteBuffer.wrap(publicKeyEncoded));
+
+        ByteBuffer sizeBuffer = ByteBuffer.allocate(Util.lenSize);
+        int bytesReceived = client.read(sizeBuffer);
+
+        if (bytesReceived != Util.lenSize) {
+            throw new JDTPException("invalid number of bytes received");
+        }
+
+        long messageSize = Util.decodeMessageSize(sizeBuffer.array());
+        ByteBuffer messageBuffer = ByteBuffer.allocate((int) messageSize);
+        bytesReceived = client.read(messageBuffer);
+
+        if (bytesReceived != messageSize) {
+            throw new JDTPException("invalid number of bytes received");
+        }
+
+        byte[] keyEncrypted = messageBuffer.array();
+        byte[] keySerialized;
+
+        try {
+            keySerialized = Crypto.rsaDecrypt(privateKey, keyEncrypted);
+        } catch (Exception e) {
+            throw new JDTPException("key decryption failed", e);
+        }
+
+        Key key = (Key) Util.deserialize(keySerialized);
+        keys.put(clientID, key);
+    }
+
+    /**
      * Call the receive event method.
      *
      * @param clientID The ID of the client who sent the data.
      * @param data     The data received from the client.
      */
     private void callReceive(long clientID, byte[] data) {
-        final Object deserializedData;
+        Key key = keys.get(clientID);
+        byte[] decryptedData;
 
         try {
-            deserializedData = Util.deserialize(data);
+            decryptedData = Crypto.aesDecrypt(key, data);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+        Object deserializedData;
+
+        try {
+            deserializedData = Util.deserialize(decryptedData);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

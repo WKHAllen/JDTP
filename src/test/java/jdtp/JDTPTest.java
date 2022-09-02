@@ -16,6 +16,7 @@ class JDTPTest {
 
     @Test
     void TestUtil() throws IOException, ClassNotFoundException {
+        // Generate various random values
         boolean randomBool = random.nextBoolean();
         int randomInt = random.nextInt();
         long randomLong = random.nextLong();
@@ -25,6 +26,7 @@ class JDTPTest {
         random.nextBytes(randomBytes);
         String randomString = randomBytes.toString();
 
+        // Test serialization and deserialization
         assert (boolean) Util.deserialize(Util.serialize(randomBool)) == randomBool;
         assert (int) Util.deserialize(Util.serialize(randomInt)) == randomInt;
         assert (long) Util.deserialize(Util.serialize(randomLong)) == randomLong;
@@ -33,6 +35,7 @@ class JDTPTest {
         assert Arrays.equals((byte[]) Util.deserialize(Util.serialize(randomBytes)), randomBytes);
         assert ((String) Util.deserialize(Util.serialize(randomString))).equals(randomString);
 
+        // Test message size encoding
         assert Arrays.equals(Util.encodeMessageSize(0), new byte[]{(byte) 0x0, (byte) 0x0, (byte) 0x0, (byte) 0x0, (byte) 0x0});
         assert Arrays.equals(Util.encodeMessageSize(1), new byte[]{(byte) 0x0, (byte) 0x0, (byte) 0x0, (byte) 0x0, (byte) 0x1});
         assert Arrays.equals(Util.encodeMessageSize(255), new byte[]{(byte) 0x0, (byte) 0x0, (byte) 0x0, (byte) 0x0, (byte) 0xff});
@@ -43,6 +46,7 @@ class JDTPTest {
         assert Arrays.equals(Util.encodeMessageSize(47362409218L), new byte[]{(byte) 0xb, (byte) 0x7, (byte) 0x5, (byte) 0x3, (byte) 0x2});
         assert Arrays.equals(Util.encodeMessageSize(1099511627775L), new byte[]{(byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff});
 
+        // Test message size decoding
         assert Util.decodeMessageSize(new byte[]{(byte) 0x0, (byte) 0x0, (byte) 0x0, (byte) 0x0, (byte) 0x0}) == 0;
         assert Util.decodeMessageSize(new byte[]{(byte) 0x0, (byte) 0x0, (byte) 0x0, (byte) 0x0, (byte) 0x1}) == 1;
         assert Util.decodeMessageSize(new byte[]{(byte) 0x0, (byte) 0x0, (byte) 0x0, (byte) 0x0, (byte) 0xff}) == 255;

@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
+import java.security.Key;
+import java.security.PublicKey;
 
 /**
  * A socket client.
@@ -18,6 +20,11 @@ public abstract class Client {
      * The client socket.
      */
     private SocketChannel sock = null;
+
+    /**
+     * The client crypto key.
+     */
+    private Key key;
 
     /**
      * The thread from which the client will handle data received from the server.
@@ -49,6 +56,13 @@ public abstract class Client {
         sock.connect(address);
 
         connected = true;
+
+        try {
+            exchangeKeys();
+        } catch (ClassNotFoundException e) {
+            throw new JDTPException("invalid key received from server", e);
+        }
+
         callHandle();
     }
 
@@ -118,7 +132,15 @@ public abstract class Client {
         }
 
         byte[] serializedData = Util.serialize(data);
-        byte[] encodedData = Util.encodeMessage(serializedData);
+        byte[] encryptedData;
+
+        try {
+            encryptedData = Crypto.aesEncrypt(key, serializedData);
+        } catch (Exception e) {
+            throw new JDTPException("encryption error", e);
+        }
+
+        byte[] encodedData = Util.encodeMessage(encryptedData);
         ByteBuffer encodedDataBuffer = ByteBuffer.wrap(encodedData);
         sock.write(encodedDataBuffer);
     }
@@ -258,15 +280,68 @@ public abstract class Client {
     }
 
     /**
+     * Exchange crypto keys with the server.
+     */
+    private void exchangeKeys() throws JDTPException, IOException, ClassNotFoundException {
+        ByteBuffer sizeBuffer = ByteBuffer.allocate(Util.lenSize);
+        int bytesReceived = sock.read(sizeBuffer);
+
+        if (bytesReceived != Util.lenSize) {
+            throw new JDTPException("invalid number of bytes received");
+        }
+
+        long messageSize = Util.decodeMessageSize(sizeBuffer.array());
+        ByteBuffer messageBuffer = ByteBuffer.allocate((int) messageSize);
+        bytesReceived = sock.read(messageBuffer);
+
+        if (bytesReceived != messageSize) {
+            throw new JDTPException("invalid number of bytes received");
+        }
+
+        byte[] publicKeySerialized = messageBuffer.array();
+        PublicKey publicKey = (PublicKey) Util.deserialize(publicKeySerialized);
+
+        Key newKey;
+
+        try {
+            newKey = Crypto.newAESKey();
+        } catch (Exception e) {
+            throw new JDTPException("key generation error", e);
+        }
+
+        byte[] keySerialized = Util.serialize(newKey);
+        byte[] keyEncrypted;
+
+        try {
+            keyEncrypted = Crypto.rsaEncrypt(publicKey, keySerialized);
+        } catch (Exception e) {
+            throw new JDTPException("key encryption failed", e);
+        }
+
+        byte[] keyEncoded = Util.encodeMessage(keyEncrypted);
+        sock.write(ByteBuffer.wrap(keyEncoded));
+
+        key = newKey;
+    }
+
+    /**
      * Call the receive event method.
      *
      * @param data The data received from the server.
      */
     private void callReceive(byte[] data) {
-        final Object deserializedData;
+        byte[] decryptedData;
 
         try {
-            deserializedData = Util.deserialize(data);
+            decryptedData = Crypto.aesDecrypt(key, data);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+        Object deserializedData;
+
+        try {
+            deserializedData = Util.deserialize(decryptedData);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
