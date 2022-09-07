@@ -330,7 +330,9 @@ public abstract class Server {
     /**
      * Serve clients.
      *
-     * @throws IOException If an error occurs while serving.
+     * @throws JDTPException          If a key exchange fails.
+     * @throws IOException            If an error occurs while serving.
+     * @throws ClassNotFoundException If a class cannot be found during a key exchange.
      */
     private void serve() throws JDTPException, IOException, ClassNotFoundException {
         ByteBuffer sizeBuffer = ByteBuffer.allocate(Util.lenSize);
@@ -350,86 +352,90 @@ public abstract class Server {
             while (iter.hasNext()) {
                 SelectionKey key = iter.next();
 
-                if (key.isAcceptable()) {
-                    SocketChannel client = sock.accept();
+                try {
+                    if (key.isAcceptable()) {
+                        SocketChannel client = sock.accept();
 
-                    long clientID = newClientID();
+                        long clientID = newClientID();
 
-                    exchangeKeys(clientID, client);
+                        exchangeKeys(clientID, client);
 
-                    client.configureBlocking(false);
-                    client.register(selector, SelectionKey.OP_READ);
-                    clients.put(clientID, client);
+                        client.configureBlocking(false);
+                        client.register(selector, SelectionKey.OP_READ);
+                        clients.put(clientID, client);
 
-                    callConnect(clientID);
-                } else if (key.isReadable()) {
-                    SocketChannel client = (SocketChannel) key.channel();
-                    long clientID = clients
-                            .entrySet()
-                            .stream()
-                            .filter(entry -> Objects.equals(entry.getValue(), client))
-                            .map(Map.Entry::getKey)
-                            .collect(Collectors.toList())
-                            .get(0);
-                    sizeBuffer.clear();
+                        callConnect(clientID);
+                    } else if (key.isReadable()) {
+                        SocketChannel client = (SocketChannel) key.channel();
+                        long clientID = clients
+                                .entrySet()
+                                .stream()
+                                .filter(entry -> Objects.equals(entry.getValue(), client))
+                                .map(Map.Entry::getKey)
+                                .collect(Collectors.toList())
+                                .get(0);
+                        sizeBuffer.clear();
 
-                    int bytesReceived = -1;
+                        int bytesReceived = -1;
 
-                    try {
-                        bytesReceived = client.read(sizeBuffer);
-                    } catch (IOException e) {
-                        if (clients.containsKey(clientID)) {
-                            client.close();
-                            clients.remove(clientID);
-                            keys.remove(clientID);
+                        try {
+                            bytesReceived = client.read(sizeBuffer);
+                        } catch (IOException e) {
+                            if (clients.containsKey(clientID)) {
+                                client.close();
+                                clients.remove(clientID);
+                                keys.remove(clientID);
 
-                            callDisconnect(clientID);
-                            continue;
+                                callDisconnect(clientID);
+                                continue;
+                            }
                         }
+
+                        if (bytesReceived != Util.lenSize) {
+                            if (clients.containsKey(clientID)) {
+                                client.close();
+                                clients.remove(clientID);
+                                keys.remove(clientID);
+
+                                callDisconnect(clientID);
+                                continue;
+                            }
+                        }
+
+                        long messageSize = Util.decodeMessageSize(sizeBuffer.array());
+                        ByteBuffer messageBuffer = ByteBuffer.allocate((int) messageSize);
+
+                        try {
+                            bytesReceived = client.read(messageBuffer);
+                        } catch (IOException e) {
+                            if (clients.containsKey(clientID)) {
+                                client.close();
+                                clients.remove(clientID);
+                                keys.remove(clientID);
+
+                                callDisconnect(clientID);
+                                continue;
+                            }
+                        }
+
+                        if (bytesReceived != messageSize) {
+                            if (clients.containsKey(clientID)) {
+                                client.close();
+                                clients.remove(clientID);
+                                keys.remove(clientID);
+
+                                callDisconnect(clientID);
+                                continue;
+                            }
+                        }
+
+                        callReceive(clientID, messageBuffer.array());
                     }
 
-                    if (bytesReceived != Util.lenSize) {
-                        if (clients.containsKey(clientID)) {
-                            client.close();
-                            clients.remove(clientID);
-                            keys.remove(clientID);
-
-                            callDisconnect(clientID);
-                            continue;
-                        }
-                    }
-
-                    long messageSize = Util.decodeMessageSize(sizeBuffer.array());
-                    ByteBuffer messageBuffer = ByteBuffer.allocate((int) messageSize);
-
-                    try {
-                        bytesReceived = client.read(messageBuffer);
-                    } catch (IOException e) {
-                        if (clients.containsKey(clientID)) {
-                            client.close();
-                            clients.remove(clientID);
-                            keys.remove(clientID);
-
-                            callDisconnect(clientID);
-                            continue;
-                        }
-                    }
-
-                    if (bytesReceived != messageSize) {
-                        if (clients.containsKey(clientID)) {
-                            client.close();
-                            clients.remove(clientID);
-                            keys.remove(clientID);
-
-                            callDisconnect(clientID);
-                            continue;
-                        }
-                    }
-
-                    callReceive(clientID, messageBuffer.array());
+                    iter.remove();
+                } catch (CancelledKeyException e) {
+                    // Key cancelled, do nothing
                 }
-
-                iter.remove();
             }
         }
     }
