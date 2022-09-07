@@ -2,8 +2,8 @@ plugins {
     id 'java'
 }
 
-group 'jdtp'
-version '0.1.0'
+group 'com.jdtp'
+version '1.0-SNAPSHOT'
 
 repositories {
     mavenCentral()
