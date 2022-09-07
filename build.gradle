@@ -1,10 +1,9 @@
 plugins {
     id 'java'
-    id 'maven-publish'
 }
 
-group 'jdtp'
-version '0.1.0'
+group 'com.jdtp'
+version '1.0-SNAPSHOT'
 
 repositories {
     mavenCentral()
@@ -19,17 +18,4 @@ test {
     dependsOn cleanTest
     testLogging.showStandardStreams = true
     useJUnitPlatform()
-}
-
-publishing {
-    repositories {
-        maven {
-            name = "jdtp"
-            url = "https://maven.pkg.github.com/WKHAllen/JDTP"
-            credentials {
-                username = System.getenv("GITHUB_ACTOR")
-                password = System.getenv("GITHUB_TOKEN")
-            }
-        }
-    }
 }
