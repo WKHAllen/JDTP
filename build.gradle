@@ -1,21 +1,35 @@
 plugins {
-    id 'java'
+    id 'java-library'
+    id 'maven-publish'
 }
 
-group 'com.jdtp'
-version '1.0-SNAPSHOT'
+group 'jdtp'
+version '0.1.0'
 
 repositories {
     mavenCentral()
 }
 
 dependencies {
-    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.1'
-    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.1'
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.9.0'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.9.0'
 }
 
 test {
     dependsOn cleanTest
     testLogging.showStandardStreams = true
     useJUnitPlatform()
+}
+
+publishing {
+    repositories {
+        maven {
+            name = "jdtp"
+            url = "https://maven.pkg.github.com/WKHAllen/JDTP"
+            credentials {
+                username = System.getenv("GITHUB_ACTOR")
+                password = System.getenv("GITHUB_TOKEN")
+            }
+        }
+    }
 }
