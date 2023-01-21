@@ -30,9 +30,9 @@ class Crypto {
     private static final int aesKeySize = 32;
 
     /**
-     * The AES IV size.
+     * The AES nonce size.
      */
-    private static final int aesIVSize = 16;
+    private static final int aesNonceSize = 16;
 
     /**
      * The AES key generation algorithm.
@@ -124,27 +124,27 @@ class Crypto {
     public static byte[] aesEncrypt(Key key, byte[] plaintext)
             throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException,
             InvalidAlgorithmParameterException, IllegalBlockSizeException, BadPaddingException {
-        byte[] ivBytes = new byte[aesIVSize];
+        byte[] nonceBytes = new byte[aesNonceSize];
         SecureRandom secureRandom = new SecureRandom();
-        secureRandom.nextBytes(ivBytes);
-        IvParameterSpec iv = new IvParameterSpec(ivBytes);
+        secureRandom.nextBytes(nonceBytes);
+        IvParameterSpec nonce = new IvParameterSpec(nonceBytes);
 
         Cipher cipher = Cipher.getInstance(aesCipherAlgorithm);
-        cipher.init(Cipher.ENCRYPT_MODE, key, iv);
+        cipher.init(Cipher.ENCRYPT_MODE, key, nonce);
         byte[] ciphertext = cipher.doFinal(plaintext);
 
-        byte[] ciphertextWithIV = new byte[ivBytes.length + ciphertext.length];
-        System.arraycopy(ivBytes, 0, ciphertextWithIV, 0, ivBytes.length);
-        System.arraycopy(ciphertext, 0, ciphertextWithIV, ivBytes.length, ciphertext.length);
+        byte[] ciphertextWithNonce = new byte[nonceBytes.length + ciphertext.length];
+        System.arraycopy(nonceBytes, 0, ciphertextWithNonce, 0, nonceBytes.length);
+        System.arraycopy(ciphertext, 0, ciphertextWithNonce, nonceBytes.length, ciphertext.length);
 
-        return ciphertextWithIV;
+        return ciphertextWithNonce;
     }
 
     /**
      * Decrypt data with AES.
      *
-     * @param key              The AES key.
-     * @param ciphertextWithIV The data to decrypt.
+     * @param key                 The AES key.
+     * @param ciphertextWithNonce The data to decrypt.
      * @return The decrypted data.
      * @throws NoSuchAlgorithmException           When the cipher algorithm is invalid.
      * @throws NoSuchPaddingException             When the cipher padding parameter is invalid.
@@ -153,15 +153,15 @@ class Crypto {
      * @throws IllegalBlockSizeException          When the block size is invalid.
      * @throws BadPaddingException                When the padding is invalid.
      */
-    public static byte[] aesDecrypt(Key key, byte[] ciphertextWithIV)
+    public static byte[] aesDecrypt(Key key, byte[] ciphertextWithNonce)
             throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException,
             InvalidAlgorithmParameterException, IllegalBlockSizeException, BadPaddingException {
-        byte[] ivBytes = Arrays.copyOfRange(ciphertextWithIV, 0, aesIVSize);
-        IvParameterSpec iv = new IvParameterSpec(ivBytes);
-        byte[] ciphertext = Arrays.copyOfRange(ciphertextWithIV, aesIVSize, ciphertextWithIV.length);
+        byte[] nonceBytes = Arrays.copyOfRange(ciphertextWithNonce, 0, aesNonceSize);
+        IvParameterSpec nonce = new IvParameterSpec(nonceBytes);
+        byte[] ciphertext = Arrays.copyOfRange(ciphertextWithNonce, aesNonceSize, ciphertextWithNonce.length);
 
         Cipher cipher = Cipher.getInstance(aesCipherAlgorithm);
-        cipher.init(Cipher.DECRYPT_MODE, key, iv);
+        cipher.init(Cipher.DECRYPT_MODE, key, nonce);
         return cipher.doFinal(ciphertext);
     }
 }

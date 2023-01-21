@@ -129,9 +129,9 @@ public abstract class Server {
         serving = false;
 
         for (Map.Entry<Long, SocketChannel> client : clients.entrySet()) {
-            client.getValue().close();
             clients.remove(client.getKey());
             keys.remove(client.getKey());
+            client.getValue().close();
         }
 
         sock.close();
@@ -209,9 +209,9 @@ public abstract class Server {
         SocketChannel client = clients.get(clientID);
 
         if (client != null) {
-            client.close();
             clients.remove(clientID);
             keys.remove(clientID);
+            client.close();
         } else {
             throw new JDTPException("client does not exist");
         }
@@ -382,24 +382,26 @@ public abstract class Server {
                             bytesReceived = client.read(sizeBuffer);
                         } catch (IOException e) {
                             if (clients.containsKey(clientID)) {
-                                client.close();
                                 clients.remove(clientID);
                                 keys.remove(clientID);
+                                client.close();
 
                                 callDisconnect(clientID);
-                                continue;
                             }
+
+                            continue;
                         }
 
                         if (bytesReceived != Util.lenSize) {
                             if (clients.containsKey(clientID)) {
-                                client.close();
                                 clients.remove(clientID);
                                 keys.remove(clientID);
+                                client.close();
 
                                 callDisconnect(clientID);
-                                continue;
                             }
+
+                            continue;
                         }
 
                         long messageSize = Util.decodeMessageSize(sizeBuffer.array());
@@ -409,24 +411,26 @@ public abstract class Server {
                             bytesReceived = client.read(messageBuffer);
                         } catch (IOException e) {
                             if (clients.containsKey(clientID)) {
-                                client.close();
                                 clients.remove(clientID);
                                 keys.remove(clientID);
+                                client.close();
 
                                 callDisconnect(clientID);
-                                continue;
                             }
+
+                            continue;
                         }
 
                         if (bytesReceived != messageSize) {
                             if (clients.containsKey(clientID)) {
-                                client.close();
                                 clients.remove(clientID);
                                 keys.remove(clientID);
+                                client.close();
 
                                 callDisconnect(clientID);
-                                continue;
                             }
+
+                            continue;
                         }
 
                         callReceive(clientID, messageBuffer.array());

@@ -85,6 +85,11 @@ class Main {
 }
 ```
 
+## Serialization
+
+The protocol is able to serialize and deserialize primitive types. Custom types can be used, though they will need to
+implement the [`Serializable`](https://docs.oracle.com/javase/7/docs/api/java/io/Serializable.html) interface.
+
 ## Security
 
 Information security comes included. Every message sent over a network interface is encrypted with AES-256. Key

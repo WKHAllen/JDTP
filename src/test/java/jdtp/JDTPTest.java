@@ -60,13 +60,14 @@ class JDTPTest {
 
     @Test
     void TestCrypto() throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException,
-            IllegalBlockSizeException, BadPaddingException, InvalidAlgorithmParameterException {
+            IllegalBlockSizeException, BadPaddingException, InvalidAlgorithmParameterException, IOException {
         // Test RSA
         byte[] rsaMessage = "Hello, RSA!".getBytes();
         KeyPair keyPair = Crypto.newRSAKeys();
         byte[] rsaEncrypted = Crypto.rsaEncrypt(keyPair.getPublic(), rsaMessage);
         byte[] rsaDecrypted = Crypto.rsaDecrypt(keyPair.getPrivate(), rsaEncrypted);
         assert Arrays.equals(rsaDecrypted, rsaMessage);
+        assert !Arrays.equals(rsaEncrypted, rsaMessage);
 
         // Test AES
         byte[] aesMessage = "Hello, AES!".getBytes();
@@ -74,6 +75,14 @@ class JDTPTest {
         byte[] aesEncrypted = Crypto.aesEncrypt(key, aesMessage);
         byte[] aesDecrypted = Crypto.aesDecrypt(key, aesEncrypted);
         assert Arrays.equals(aesDecrypted, aesMessage);
+        assert !Arrays.equals(aesEncrypted, aesMessage);
+
+        // Test encrypting/decrypting AES key with RSA
+        byte[] encodedKey = Util.serialize(key);
+        byte[] encryptedKey = Crypto.rsaEncrypt(keyPair.getPublic(), encodedKey);
+        byte[] decryptedKey = Crypto.rsaDecrypt(keyPair.getPrivate(), encryptedKey);
+        assert Arrays.equals(decryptedKey, encodedKey);
+        assert !Arrays.equals(encryptedKey, encodedKey);
     }
 
     @Test
@@ -356,6 +365,60 @@ class JDTPTest {
     }
 
     @Test
+    void TestSendingCustomTypes() throws JDTPException, IOException, InterruptedException {
+        // Create server
+        TestServer s = new TestServer(1, 1, 1);
+        s.start();
+        String serverHost = s.getHost();
+        int serverPort = s.getPort();
+        System.out.printf("Server address: %s:%d\n", serverHost, serverPort);
+        Thread.sleep(waitTime);
+
+        // Create client
+        TestClient c = new TestClient(1, 0);
+        c.connect(serverHost, serverPort);
+        Thread.sleep(waitTime);
+
+        // Send messages
+        Custom serverMessage = new Custom();
+        serverMessage.a = 123;
+        serverMessage.b = "Hello, custom server class!";
+        serverMessage.c.add("first server item");
+        serverMessage.c.add("second server item");
+        Custom clientMessage = new Custom();
+        clientMessage.a = 456;
+        clientMessage.b = "Hello, custom client class!";
+        clientMessage.c.add("#1 client item");
+        clientMessage.c.add("client item #2");
+        clientMessage.c.add("(3) client item");
+        c.send(serverMessage);
+        s.send(0, clientMessage);
+        Thread.sleep(waitTime);
+
+        // Disconnect client
+        c.disconnect();
+        Thread.sleep(waitTime);
+
+        // Stop server
+        s.stop();
+        Thread.sleep(waitTime);
+
+        // Check event counts
+        assert s.getReceiveCount() == 0;
+        assert s.getConnectCount() == 0;
+        assert s.getDisconnectCount() == 0;
+        assert s.eventsDone();
+        assert Arrays.equals(s.getReceived(), new Object[]{serverMessage});
+        assert Arrays.equals(s.getReceivedClientIDs(), new long[]{0});
+        assert Arrays.equals(s.getConnectClientIDs(), new long[]{0});
+        assert Arrays.equals(s.getDisconnectClientIDs(), new long[]{0});
+        assert c.getReceiveCount() == 0;
+        assert c.getDisconnectedCount() == 0;
+        assert c.eventsDone();
+        assert Arrays.equals(c.getReceived(), new Object[]{clientMessage});
+    }
+
+    @Test
     void TestMultipleClients() throws JDTPException, IOException, InterruptedException {
         // Messages
         String messageFromClient1 = "Hello from client #1!";
@@ -504,6 +567,7 @@ class JDTPTest {
         assert !c.isConnected();
 
         // Stop server
+        assert s.isServing();
         s.stop();
         assert !s.isServing();
         Thread.sleep(waitTime);
