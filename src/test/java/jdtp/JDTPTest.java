@@ -236,6 +236,7 @@ class JDTPTest {
             s.send(0, clientMessage);
             Thread.sleep(10);
         }
+        Thread.sleep(waitTime);
 
         // Disconnect client
         c.disconnect();
