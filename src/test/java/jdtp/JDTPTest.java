@@ -11,7 +11,7 @@ import java.util.Arrays;
 import java.util.Random;
 
 class JDTPTest {
-    private final int waitTime = 200;
+    private final int waitTime = 100;
     private final Random random = new Random();
 
     @Test
@@ -271,7 +271,9 @@ class JDTPTest {
 
         // Create client
         TestClient c = new TestClient(1, 0);
+        assert !c.isConnected();
         c.connect(serverHost, serverPort);
+        assert c.isConnected();
         Thread.sleep(waitTime);
 
         // Send messages
@@ -279,12 +281,18 @@ class JDTPTest {
         random.nextBytes(largeServerMessage);
         byte[] largeClientMessage = new byte[random.nextInt(16384) + 16384];
         random.nextBytes(largeClientMessage);
+        assert c.isConnected();
         c.send(largeServerMessage);
+        assert c.isConnected();
         s.sendAll(largeClientMessage);
+        assert c.isConnected();
         Thread.sleep(waitTime);
+        assert c.isConnected();
 
         // Disconnect client
+        assert c.isConnected();
         c.disconnect();
+        assert !c.isConnected();
         Thread.sleep(waitTime);
 
         // Stop server
