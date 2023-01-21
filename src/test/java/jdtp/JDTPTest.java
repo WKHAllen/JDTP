@@ -11,7 +11,7 @@ import java.util.Arrays;
 import java.util.Random;
 
 class JDTPTest {
-    private final int waitTime = 100;
+    private final int waitTime = 200;
     private final Random random = new Random();
 
     @Test
